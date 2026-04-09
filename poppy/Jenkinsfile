@@ -5,6 +5,11 @@ pipeline {
         maven 'Default Maven'
     }
 
+    environment {
+        REMOTE_HOST = '3.95.67.56'
+        REMOTE_USER = 'ec2-user'
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -19,6 +24,21 @@ pipeline {
                     withSonarQubeEnv('Sonar-Server') {
                         sh './mvnw clean verify sonar:sonar -Dsonar.projectKey=Onix-Website-Scan'
                     }
+                }
+            }
+        }
+
+        stage('Test SSH to Docker EC2') {
+            steps {
+                sshagent(['docker-ec2-ssh']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
+                            echo "Connected successfully"
+                            hostname
+                            whoami
+                            docker ps
+                        '
+                    '''
                 }
             }
         }
