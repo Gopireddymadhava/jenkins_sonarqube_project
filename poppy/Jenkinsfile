@@ -8,6 +8,9 @@ pipeline {
     environment {
         REMOTE_HOST = '54.82.38.46'
         REMOTE_USER = 'ec2-user'
+        REMOTE_APP_DIR = '/home/ec2-user/poppy-app'
+        IMAGE_NAME = 'poppy-app'
+        CONTAINER_NAME = 'poppy-container'
     }
 
     stages {
@@ -28,16 +31,39 @@ pipeline {
             }
         }
 
-        stage('Test SSH to Docker EC2') {
+        stage('Copy files to Docker EC2') {
             steps {
                 sshagent(['docker-ec2-ssh']) {
                     sh '''
-                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} '
-                            echo "Connected successfully"
-                            hostname
-                            whoami
-                            docker ps
-                        '
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "mkdir -p ${REMOTE_APP_DIR}"
+                        scp -o StrictHostKeyChecking=no -r poppy/* ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_APP_DIR}/
+                    '''
+                }
+            }
+        }
+
+        stage('Build Docker Image on Docker EC2') {
+            steps {
+                sshagent(['docker-ec2-ssh']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
+                            cd ${REMOTE_APP_DIR} &&
+                            docker build -t ${IMAGE_NAME}:latest .
+                        "
+                    '''
+                }
+            }
+        }
+
+        stage('Run Container on Docker EC2') {
+            steps {
+                sshagent(['docker-ec2-ssh']) {
+                    sh '''
+                        ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
+                            docker stop ${CONTAINER_NAME} || true &&
+                            docker rm ${CONTAINER_NAME} || true &&
+                            docker run -d --name ${CONTAINER_NAME} -p 8080:8080 ${IMAGE_NAME}:latest
+                        "
                     '''
                 }
             }
