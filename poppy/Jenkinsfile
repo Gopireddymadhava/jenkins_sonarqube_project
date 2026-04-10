@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        REMOTE_HOST = '3.95.67.56'
+        REMOTE_HOST = '54.82.38.46'
         REMOTE_USER = 'ec2-user'
     }
 
