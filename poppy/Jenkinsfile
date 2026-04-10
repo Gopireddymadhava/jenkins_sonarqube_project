@@ -33,7 +33,7 @@ pipeline {
 
         stage('Copy files to Docker EC2') {
             steps {
-                sshagent(['docker-ec2-ssh']) {
+                sshagent(['docker-ec2-key']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "mkdir -p ${REMOTE_APP_DIR}"
                         scp -o StrictHostKeyChecking=no -r poppy/* ${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_APP_DIR}/
@@ -44,7 +44,7 @@ pipeline {
 
         stage('Build Docker Image on Docker EC2') {
             steps {
-                sshagent(['docker-ec2-ssh']) {
+                sshagent(['docker-ec2-key']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
                             cd ${REMOTE_APP_DIR} &&
@@ -57,7 +57,7 @@ pipeline {
 
         stage('Run Container on Docker EC2') {
             steps {
-                sshagent(['docker-ec2-ssh']) {
+                sshagent(['docker-ec2-key']) {
                     sh '''
                         ssh -o StrictHostKeyChecking=no ${REMOTE_USER}@${REMOTE_HOST} "
                             docker stop ${CONTAINER_NAME} || true &&
